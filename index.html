@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kurs USD BI & Pajak</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Ctext x='16' y='22' font-size='17' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#16202c;--mute:#5d6b7a;--line:#e1e6ec;--acc:#0b5cad;--acc2:#e8f1fb;--up:#b42318;--down:#067647;--warn-bg:#fff6dd;--warn:#7a5500;--kmk:#8a4b08;--kmk-bg:#fdf3e7;--hol:#b42318;--hol-bg:#fde8e7;--hol-row:#fff7f6;--wk:#475467;--wk-bg:#eef1f5;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#171e26;--ink:#e6ebf0;--mute:#93a1b0;--line:#26313d;--acc:#5ea4f0;--acc2:#1a2a3c;--up:#f97066;--down:#47cd89;--warn-bg:#3a2e0b;--warn:#f5c86a;--kmk:#f0a95b;--kmk-bg:#2e2214;--hol:#f97066;--hol-bg:#3d1b19;--hol-row:#211819;--wk:#b0bccb;--wk-bg:#222b36;--shadow:none}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:22px;margin:0}
+h1 small{font-weight:400;color:var(--mute);font-size:14px;margin-left:6px}
+.status{font-size:13px;color:var(--mute)}
+.status a{color:var(--acc)}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:14px;display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+.sel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tgl{font-size:17px;font-weight:600}
+.note{font-size:13px;color:var(--warn);background:var(--warn-bg);padding:3px 8px;border-radius:6px;display:none}
+.rates{display:grid;grid-template-columns:repeat(3,1fr) 1.15fr;gap:12px;margin-top:12px}
+.rate.kmk{background:var(--kmk-bg);border-color:transparent}
+.rate .sub{font-size:12px;color:var(--mute);margin-top:4px;line-height:1.35}
+.rate .sub a{color:var(--acc)}
+.rate .src{font-size:11px;color:var(--mute);margin-top:3px}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;margin-left:8px;vertical-align:2px}
+.b-libur{background:var(--hol-bg);color:var(--hol)}
+.b-wknd{background:var(--wk-bg);color:var(--wk)}
+.b-pend{background:var(--warn-bg);color:var(--warn)}
+tr.hol td{color:var(--mute);font-style:italic;background:var(--hol-row)}
+tr.hol td:first-child{font-style:normal}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute);margin:-2px 0 4px}
+.legend i{display:inline-block;width:18px;height:0;border-top:2px solid var(--acc);vertical-align:middle;margin-right:5px}
+.legend i.k{border-top:2px dashed var(--kmk)}
+.rate{border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;position:relative;transition:border-color .15s}
+.rate:hover{border-color:var(--acc)}
+.rate.mid{background:var(--acc2);border-color:transparent}
+.rate .lbl{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.rate .val{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0}
+.rate .chg{font-size:13px;font-variant-numeric:tabular-nums}
+.rate .cp{position:absolute;top:10px;right:12px;font-size:11px;color:var(--mute)}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--mute)}
+.picker{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+input[type=date]{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+button{font:inherit;font-size:13px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--acc);color:var(--acc)}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.sec-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.sec-title h2{font-size:16px;margin:0}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+#chart{width:100%;height:260px;display:block}
+#chart text{fill:var(--mute);font-size:11px}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--card);font-size:12px;padding:5px 8px;border-radius:6px;display:none;white-space:nowrap;z-index:5}
+.tbl-wrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+th:first-child,td:first-child{text-align:left}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--acc2)}
+tr.sel{background:var(--acc2);font-weight:600}
+.range{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.empty{padding:40px;text-align:center;color:var(--mute)}
+@media (max-width:900px){.rates{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.rates{grid-template-columns:1fr}.rate .val{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kurs USD → IDR <small>Kurs Transaksi BI &amp; Kurs Pajak (KMK)</small></h1>
+    <div class="status" id="status">Memuat data…</div>
+  </header>
+  <div class="warn" id="warn"></div>
+
+  <section class="card" id="main">
+    <div class="sel-head">
+      <div class="tgl"><span id="selDate">–</span><span id="selBadge"></span></div>
+    </div>
+    <div class="note" id="selNote" style="margin-top:8px"></div>
+    <div class="rates">
+      <div class="rate" data-k="jual" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Jual BI</div><div class="val" id="v-jual">–</div><div class="chg" id="c-jual"></div><div class="src" id="s-jual"></div></div>
+      <div class="rate" data-k="beli" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Beli BI</div><div class="val" id="v-beli">–</div><div class="chg" id="c-beli"></div><div class="src" id="s-beli"></div></div>
+      <div class="rate mid" data-k="tengah" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Tengah BI</div><div class="val" id="v-tengah">–</div><div class="chg" id="c-tengah"></div><div class="src" id="s-tengah"></div></div>
+      <div class="rate kmk" data-k="kmk" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Pajak (KMK)</div><div class="val" id="v-kmk">–</div><div class="chg" id="c-kmk"></div><div class="sub" id="s-kmk"></div></div>
+    </div>
+    <div class="picker">
+      <label for="dt" style="font-size:13px;color:var(--mute)">Tanggal</label>
+      <input type="date" id="dt">
+      <button data-q="today">Terbaru</button>
+      <button data-q="yday">Kemarin</button>
+      <button data-q="w">−7 hari</button>
+      <button data-q="m">−1 bulan</button>
+      <button data-q="eom">Akhir bulan lalu</button>
+      <button data-q="eoy">31 Des tahun lalu</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title">
+      <div><h2>Grafik</h2><div class="legend"><span><i></i>Kurs Tengah BI</span><span><i class="k"></i>Kurs Pajak (KMK)</span></div></div>
+      <div class="seg" id="seg">
+        <button data-r="1">1B</button><button data-r="3">3B</button><button data-r="6">6B</button><button data-r="12" class="on">1T</button><button data-r="0">Semua</button>
+      </div>
+    </div>
+    <svg id="chart" role="img" aria-label="Grafik kurs tengah USD"></svg>
+  </section>
+
+  <section class="card">
+    <div class="sec-title">
+      <h2>Riwayat</h2>
+      <div class="range">
+        <input type="date" id="from"> s.d. <input type="date" id="to">
+        <button id="csv">Unduh CSV</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tanggal</th><th>Kurs Jual</th><th>Kurs Beli</th><th>Kurs Tengah</th><th>Perubahan</th><th>Kurs Pajak (KMK)</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+const BLN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const nf = new Intl.NumberFormat("id-ID", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const $ = id => document.getElementById(id);
+const S = {rows: [], kmk: [], sel: null, range: 12, meta: null, from: null, to: null};
+
+const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const longDate = s => { const d = parse(s); return `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`; };
+const shortDate = s => { const d = parse(s); return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`; };
+const midDate = s => { const d = parse(s); return `${d.getDate()} ${BLN[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`; };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const addMonths = (s, n) => { const d = parse(s); d.setMonth(d.getMonth() + n); return iso(d); };
+const lastBI = () => S.rows[S.rows.length - 1].tgl;
+
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 1600); }
+
+// kurs BI yang berlaku pada tanggal s = kurs BI terakhir <= s
+function rowAt(s) {
+  let lo = 0, hi = S.rows.length - 1, ans = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (S.rows[mid].tgl <= s) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+  return ans;
+}
+// periode KMK (Rabu s.d. Selasa) yang memuat tanggal s
+function kmkAt(s) {
+  let lo = 0, hi = S.kmk.length - 1, ans = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (S.kmk[mid].mulai <= s) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+  return ans >= 0 && S.kmk[ans].akhir >= s ? ans : -1;
+}
+// jenis hari: normal (ada kurs BI) / akhir pekan / libur (hari kerja tanpa kurs BI) / belum (kurs hari itu belum terbit)
+function dayType(s) {
+  const i = rowAt(s);
+  if (i >= 0 && S.rows[i].tgl === s) return "normal";
+  const wd = parse(s).getDay();
+  if (wd === 0 || wd === 6) return "wknd";
+  return s > lastBI() ? "belum" : "libur";
+}
+
+function load() {
+  const old = document.getElementById("dataScript");
+  if (old) old.remove();
+  const sc = document.createElement("script");
+  sc.id = "dataScript";
+  sc.src = "data/kurs_usd.js?t=" + Date.now();
+  sc.onload = () => apply(window.KURS_BI);
+  sc.onerror = () => apply(null);
+  document.head.appendChild(sc);
+}
+
+function apply(d) {
+  if (!d || !Array.isArray(d.rows) || !d.rows.length) {
+    if (!S.rows.length) {
+      $("main").innerHTML = '<div class="empty">Data kurs belum tersedia. Jalankan <b>update_kurs.ps1</b> di folder BI Rate (atau tunggu jadwal otomatis).</div>';
+      $("status").textContent = "Data belum ada";
+    }
+    return;
+  }
+  const first = !S.rows.length;
+  const today = iso(new Date());
+  const prevSel = S.sel, prevLast = S.rows.length ? lastBI() : null;
+  S.meta = d;
+  S.rows = d.rows.slice().sort((a, b) => a.tgl < b.tgl ? -1 : 1);
+  S.kmk = (Array.isArray(d.kmk) ? d.kmk : (d.kmk ? [d.kmk] : [])).slice().sort((a, b) => a.mulai < b.mulai ? -1 : 1);
+  const firstT = S.rows[0].tgl;
+  if (first || !prevSel || prevSel === prevLast || prevSel === today) S.sel = today < lastBI() ? lastBI() : today;
+  for (const id of ["dt", "from", "to"]) { $(id).min = firstT; $(id).max = today; }
+  if (first || S.to === prevLast || S.to === today) { S.to = today; if (first) S.from = addDays(today, -30) < firstT ? firstT : addDays(today, -30); }
+  $("from").value = S.from; $("to").value = S.to;
+  renderStatus(); renderSel(); renderChart(); renderTable();
+}
+
+function renderStatus() {
+  const m = S.meta;
+  const fmt = t => t ? t.replace("T", " ").slice(0, 16) : "–";
+  const k = S.kmk.length ? S.kmk[S.kmk.length - 1] : null;
+  $("status").innerHTML = `Kurs BI s.d. ${shortDate(lastBI())}` + (k ? ` · KMK s.d. ${shortDate(k.akhir)}` : "") +
+    ` · diperbarui ${fmt(m.last_ok)} · otomatis tiap jam (hari kerja) · <a href="https://www.bi.go.id/id/statistik/informasi-kurs/transaksi-bi/default.aspx" target="_blank" rel="noopener">BI</a> · <a href="https://fiskal.kemenkeu.go.id/informasi-publik/kurs-pajak" target="_blank" rel="noopener">Kurs Pajak</a>`;
+  const w = [];
+  if (m.error) w.push(`Update kurs BI terakhir (${fmt(m.last_try)}) gagal: ${m.error}.`);
+  if (m.kmk_error) w.push(`Update kurs pajak gagal: ${m.kmk_error}.`);
+  if (w.length) w.push("Data yang tampil adalah data terakhir yang berhasil diambil.");
+  const now = new Date(), today = iso(now), wd = now.getDay();
+  const gapDays = (parse(today) - parse(lastBI())) / 864e5;
+  if (!m.error && ((wd >= 1 && wd <= 5 && now.getHours() >= 11 && gapDays >= 1 && (m.last_try || "") < today + "T11") || gapDays > 5))
+    w.push(`Kurs BI terbaru bertanggal ${shortDate(lastBI())}. Bila hari ini hari kerja, pastikan jadwal update berjalan (lihat data\\update.log).`);
+  if (!m.kmk_error && S.kmk.length && kmkAt(today) < 0) w.push("Kurs pajak (KMK) untuk minggu ini belum tersedia.");
+  $("warn").style.display = w.length ? "block" : "none";
+  $("warn").textContent = w.join(" ");
+}
+
+function chg(cur, prev, unit) {
+  if (prev == null) return '<span class="flat">–</span>';
+  const d = cur - prev, p = prev ? d / prev * 100 : 0;
+  if (Math.abs(d) < 0.005) return '<span class="flat">● tidak berubah</span>';
+  const c = d > 0 ? "up" : "down", a = d > 0 ? "▲" : "▼";
+  return `<span class="${c}">${a} ${nf.format(Math.abs(d))} (${(d > 0 ? "+" : "−") + Math.abs(p).toFixed(2).replace(".", ",")}%)</span>`;
+}
+
+const BADGE = {
+  wknd: ['b-wknd', 'Akhir pekan'],
+  libur: ['b-libur', 'Hari libur'],
+  belum: ['b-pend', 'Kurs BI belum terbit'],
+};
+
+function renderSel() {
+  const s = S.sel, i = rowAt(s), t = dayType(s);
+  $("dt").value = s;
+  $("selDate").textContent = longDate(s);
+  $("selBadge").innerHTML = BADGE[t] ? `<span class="badge ${BADGE[t][0]}">${BADGE[t][1]}</span>` : "";
+  const note = $("selNote");
+  if (i < 0) {
+    note.style.display = "block"; note.textContent = "Belum ada data kurs BI untuk tanggal ini.";
+    for (const k of ["jual", "beli", "tengah"]) { $("v-" + k).textContent = "–"; $("c-" + k).innerHTML = ""; $("s-" + k).textContent = ""; }
+  } else {
+    const r = S.rows[i], p = i > 0 ? S.rows[i - 1] : null;
+    if (t !== "normal") {
+      const why = t === "wknd" ? `${HARI[parse(s).getDay()]} — BI tidak menerbitkan kurs pada akhir pekan`
+        : t === "libur" ? "Hari libur nasional / cuti bersama — BI tidak menerbitkan kurs"
+        : "Kurs BI untuk tanggal ini belum terbit (biasanya terbit pagi hari kerja)";
+      note.style.display = "block";
+      note.textContent = `${why}. Kurs BI yang dipakai: kurs tanggal sebelumnya, ${longDate(r.tgl)}.`;
+    } else note.style.display = "none";
+    for (const k of ["jual", "beli", "tengah"]) {
+      $("v-" + k).textContent = nf.format(r[k]);
+      $("c-" + k).innerHTML = chg(r[k], p ? p[k] : null) + (p ? ` <span class="flat">vs ${shortDate(p.tgl)}</span>` : "");
+      $("s-" + k).textContent = t !== "normal" ? `kurs BI ${shortDate(r.tgl)}` : "";
+    }
+  }
+  const ki = kmkAt(s);
+  if (ki < 0) {
+    $("v-kmk").textContent = "–"; $("c-kmk").innerHTML = "";
+    $("s-kmk").textContent = S.kmk.length && s > S.kmk[S.kmk.length - 1].akhir ? "KMK untuk periode ini belum terbit" : "Tidak ada data KMK untuk tanggal ini";
+  } else {
+    const k = S.kmk[ki], pk = ki > 0 ? S.kmk[ki - 1] : null;
+    $("v-kmk").textContent = nf.format(k.usd);
+    $("c-kmk").innerHTML = chg(k.usd, pk ? pk.usd : null) + (pk ? ' <span class="flat">vs minggu lalu</span>' : "");
+    $("s-kmk").innerHTML = `KMK ${k.nomor}<br>berlaku ${midDate(k.mulai)} – ${midDate(k.akhir)}` + (k.pdf ? ` · <a href="${k.pdf}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF</a>` : "");
+  }
+  document.querySelectorAll("#tb tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.t === s));
+}
+
+function pick(s) {
+  const today = iso(new Date());
+  if (s > today) s = today;
+  if (s < S.rows[0].tgl) { toast("Data tersedia mulai " + shortDate(S.rows[0].tgl)); s = S.rows[0].tgl; }
+  S.sel = s; renderSel(); renderChart();
+}
+
+function renderChart() {
+  const svg = $("chart"), W = svg.clientWidth || 900, H = 260, pl = 62, pr = 12, pt = 12, pb = 26;
+  const last = lastBI();
+  const startT = S.range ? addMonths(last, -S.range) : S.rows[0].tgl;
+  const R = S.rows.filter(r => r.tgl >= startT);
+  if (R.length < 2) { svg.innerHTML = ""; return; }
+  const K = S.kmk.filter(k => k.akhir >= R[0].tgl && k.mulai <= R[R.length - 1].tgl);
+  const vs = R.map(r => r.tengah).concat(K.map(k => k.usd)); let mn = Math.min(...vs), mx = Math.max(...vs);
+  const pad = (mx - mn) * 0.08 || 50; mn -= pad; mx += pad;
+  const t0 = parse(R[0].tgl).getTime(), t1 = parse(R[R.length - 1].tgl).getTime();
+  const clamp = s => s < R[0].tgl ? R[0].tgl : s > R[R.length - 1].tgl ? R[R.length - 1].tgl : s;
+  const X = t => pl + (parse(clamp(t)).getTime() - t0) / (t1 - t0 || 1) * (W - pl - pr);
+  const Y = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
+  let g = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = mn + (mx - mn) * k / 4, y = Y(v);
+    g += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end">${Math.round(v).toLocaleString("id-ID")}</text>`;
+  }
+  const months = [];
+  for (const r of R) { const m = r.tgl.slice(0, 7); if (!months.length || months[months.length - 1].m !== m) months.push({m, t: r.tgl}); }
+  const step = Math.ceil(months.length / 8);
+  months.forEach((o, k) => { if (k % step === 0) { const d = parse(o.t); g += `<text x="${X(o.t)}" y="${H - 6}" text-anchor="middle">${BLN[d.getMonth()].slice(0, 3)} ${String(d.getFullYear()).slice(2)}</text>`; } });
+  const path = R.map((r, k) => (k ? "L" : "M") + X(r.tgl).toFixed(1) + " " + Y(r.tengah).toFixed(1)).join(" ");
+  const area = path + ` L${X(R[R.length - 1].tgl).toFixed(1)} ${H - pb} L${X(R[0].tgl).toFixed(1)} ${H - pb} Z`;
+  let kp = "";
+  K.forEach((k, j) => { const x1 = X(k.mulai), x2 = X(addDays(k.akhir, 1)), y = Y(k.usd).toFixed(1); kp += (j ? "L" : "M") + x1.toFixed(1) + " " + y + " L" + x2.toFixed(1) + " " + y + " "; });
+  const si = rowAt(S.sel), sr = si >= 0 ? S.rows[si] : null;
+  const mark = sr && sr.tgl >= R[0].tgl ? `<line x1="${X(S.sel)}" x2="${X(S.sel)}" y1="${pt}" y2="${H - pb}" stroke="var(--acc)" stroke-dasharray="3 3"/><circle cx="${X(sr.tgl)}" cy="${Y(sr.tengah)}" r="4.5" fill="var(--acc)"/>` : "";
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = g + `<path d="${area}" fill="var(--acc)" opacity=".08"/><path d="${kp}" fill="none" stroke="var(--kmk)" stroke-width="1.6" stroke-dasharray="5 3"/><path d="${path}" fill="none" stroke="var(--acc)" stroke-width="2"/>` + mark +
+    `<line id="hl" x1="0" x2="0" y1="${pt}" y2="${H - pb}" stroke="var(--mute)" opacity="0"/><rect id="hit" x="${pl}" y="${pt}" width="${W - pl - pr}" height="${H - pt - pb}" fill="transparent" style="cursor:crosshair"/>`;
+  const hit = svg.querySelector("#hit"), hl = svg.querySelector("#hl"), tip = $("tip");
+  const near = ev => {
+    const b = svg.getBoundingClientRect(), x = (ev.clientX - b.left) * (W / b.width);
+    let best = R[0], bd = 1e9;
+    for (const r of R) { const dd = Math.abs(X(r.tgl) - x); if (dd < bd) { bd = dd; best = r; } }
+    return best;
+  };
+  hit.onmousemove = ev => {
+    const r = near(ev), ki = kmkAt(r.tgl); hl.setAttribute("x1", X(r.tgl)); hl.setAttribute("x2", X(r.tgl)); hl.setAttribute("opacity", ".5");
+    tip.style.display = "block"; tip.textContent = `${shortDate(r.tgl)} · Tengah ${nf.format(r.tengah)}` + (ki >= 0 ? ` · KMK ${nf.format(S.kmk[ki].usd)}` : "");
+    tip.style.left = Math.min(ev.clientX + 12, window.innerWidth - 260) + "px"; tip.style.top = (ev.clientY - 32) + "px";
+  };
+  hit.onmouseleave = () => { tip.style.display = "none"; hl.setAttribute("opacity", "0"); };
+  hit.onclick = ev => pick(near(ev).tgl);
+}
+
+// baris tabel: hari kurs BI + hari libur (hari kerja tanpa kurs) dengan kurs tanggal sebelumnya; akhir pekan tidak ditampilkan
+function rangeRows() {
+  const out = [], lb = lastBI();
+  for (let s = S.to; s >= S.from; s = addDays(s, -1)) {
+    const t = dayType(s);
+    if (t === "wknd") continue;
+    if (t === "belum" && s > lb) { if (s !== iso(new Date())) continue; }
+    const i = rowAt(s); if (i < 0) continue;
+    const r = S.rows[i], ki = kmkAt(s);
+    out.push({tgl: s, r, prev: t === "normal" && i > 0 ? S.rows[i - 1] : null, type: t, kmk: ki >= 0 ? S.kmk[ki] : null});
+  }
+  return out;
+}
+
+function renderTable() {
+  const rows = rangeRows();
+  $("tb").innerHTML = rows.length ? rows.map(o => {
+    const h = o.type !== "normal";
+    const lbl = h ? ` <span class="badge ${BADGE[o.type][0]}" style="margin-left:4px">${o.type === "libur" ? "Libur" : "Belum terbit"}</span>` : "";
+    const ttl = h ? ` title="Kurs BI mengikuti ${shortDate(o.r.tgl)}"` : "";
+    return `<tr data-t="${o.tgl}" class="${h ? "hol" : ""}"${ttl}><td>${shortDate(o.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(o.tgl).getDay()]}</span>${lbl}</td>` +
+      `<td>${nf.format(o.r.jual)}</td><td>${nf.format(o.r.beli)}</td><td><b>${nf.format(o.r.tengah)}</b></td>` +
+      `<td>${h ? `<span class="flat">kurs ${shortDate(o.r.tgl)}</span>` : (o.prev ? chg(o.r.tengah, o.prev.tengah) : "–")}</td>` +
+      `<td>${o.kmk ? nf.format(o.kmk.usd) : "–"}</td></tr>`;
+  }).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--mute)">Tidak ada data pada rentang ini</td></tr>';
+  renderSel();
+}
+
+$("tb").onclick = ev => { const tr = ev.target.closest("tr[data-t]"); if (tr) { pick(tr.dataset.t); window.scrollTo({top: 0, behavior: "smooth"}); } };
+$("dt").onchange = ev => ev.target.value && pick(ev.target.value);
+document.querySelectorAll(".picker button").forEach(b => b.onclick = () => {
+  const today = iso(new Date()), q = b.dataset.q, t = new Date();
+  if (q === "today") pick(today);
+  else if (q === "yday") pick(addDays(today, -1));
+  else if (q === "w") pick(addDays(today, -7));
+  else if (q === "m") pick(addMonths(today, -1));
+  else if (q === "eom") pick(iso(new Date(t.getFullYear(), t.getMonth(), 0)));
+  else if (q === "eoy") pick((t.getFullYear() - 1) + "-12-31");
+});
+document.querySelectorAll("#seg button").forEach(b => b.onclick = () => {
+  S.range = Number(b.dataset.r); document.querySelectorAll("#seg button").forEach(x => x.classList.toggle("on", x === b)); renderChart();
+});
+for (const id of ["from", "to"]) $(id).onchange = () => {
+  if (!$("from").value || !$("to").value) return;
+  S.from = $("from").value; S.to = $("to").value;
+  if (S.from > S.to) [S.from, S.to] = [S.to, S.from];
+  $("from").value = S.from; $("to").value = S.to; renderTable();
+};
+document.querySelectorAll(".rate").forEach(el => el.onclick = async () => {
+  const k = el.dataset.k; let v, label;
+  if (k === "kmk") { const ki = kmkAt(S.sel); if (ki < 0) return; v = S.kmk[ki].usd; label = `Kurs Pajak KMK ${S.kmk[ki].nomor}`; }
+  else { const i = rowAt(S.sel); if (i < 0) return; v = S.rows[i][k]; label = `${el.querySelector(".lbl").textContent} ${shortDate(S.rows[i].tgl)}`; }
+  const txt = v.toFixed(2).replace(".", ",");
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  toast(`Tersalin: ${txt} (${label})`);
+});
+$("csv").onclick = () => {
+  const rows = rangeRows().reverse();
+  const n = v => v.toFixed(2).replace(".", ",");
+  const lines = ["Tanggal;Hari;Kurs Jual BI;Kurs Beli BI;Kurs Tengah BI;Kurs Pajak KMK;Nomor KMK;Keterangan"].concat(rows.map(o =>
+    [shortDate(o.tgl), HARI[parse(o.tgl).getDay()], n(o.r.jual), n(o.r.beli), n(o.r.tengah), o.kmk ? n(o.kmk.usd) : "", o.kmk ? o.kmk.nomor : "",
+     o.type === "libur" ? `Hari libur - kurs BI ${shortDate(o.r.tgl)}` : o.type === "belum" ? `Kurs BI belum terbit - kurs ${shortDate(o.r.tgl)}` : ""].join(";")));
+  const blob = new Blob(["﻿" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `Kurs USD BI & KMK ${S.from} sd ${S.to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.rows.length && renderChart(), 150); });
+
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
