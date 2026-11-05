@@ -6,8 +6,8 @@
 <title>Kurs USD BI & Pajak</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Ctext x='16' y='22' font-size='17' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
 <style>
-:root{--bg:#f4f6f9;--card:#fff;--ink:#16202c;--mute:#5d6b7a;--line:#e1e6ec;--acc:#0b5cad;--acc2:#e8f1fb;--up:#b42318;--down:#067647;--warn-bg:#fff6dd;--warn:#7a5500;--kmk:#8a4b08;--kmk-bg:#fdf3e7;--hol:#b42318;--hol-bg:#fde8e7;--hol-row:#fff7f6;--wk:#475467;--wk-bg:#eef1f5;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#171e26;--ink:#e6ebf0;--mute:#93a1b0;--line:#26313d;--acc:#5ea4f0;--acc2:#1a2a3c;--up:#f97066;--down:#47cd89;--warn-bg:#3a2e0b;--warn:#f5c86a;--kmk:#f0a95b;--kmk-bg:#2e2214;--hol:#f97066;--hol-bg:#3d1b19;--hol-row:#211819;--wk:#b0bccb;--wk-bg:#222b36;--shadow:none}}
+:root{--bg:#f4f6f9;--card:#fff;--ink:#16202c;--mute:#5d6b7a;--line:#e1e6ec;--acc:#0b5cad;--acc2:#e8f1fb;--up:#b42318;--down:#067647;--warn-bg:#fff6dd;--warn:#7a5500;--kmk:#8a4b08;--kmk-bg:#fdf3e7;--hol:#b42318;--hol-bg:#fde8e7;--hol-row:#fff7f6;--wk:#475467;--wk-bg:#eef1f5;--sys:#6941c6;--sys-bg:#f1ecfb;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#171e26;--ink:#e6ebf0;--mute:#93a1b0;--line:#26313d;--acc:#5ea4f0;--acc2:#1a2a3c;--up:#f97066;--down:#47cd89;--warn-bg:#3a2e0b;--warn:#f5c86a;--kmk:#f0a95b;--kmk-bg:#2e2214;--hol:#f97066;--hol-bg:#3d1b19;--hol-row:#211819;--wk:#b0bccb;--wk-bg:#222b36;--sys:#b692f6;--sys-bg:#251d38;--shadow:none}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,Arial,sans-serif}
 .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 40px}
@@ -66,8 +66,20 @@ tr.sel{background:var(--acc2);font-weight:600}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 .empty{padding:40px;text-align:center;color:var(--mute)}
-@media (max-width:900px){.rates{grid-template-columns:1fr 1fr}}
-@media (max-width:640px){.rates{grid-template-columns:1fr}.rate .val{font-size:26px}}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{font-size:14px;padding:7px 16px;font-weight:600}
+.rates.sys{grid-template-columns:1.1fr 1fr 1.3fr}
+.rate.sell{background:var(--sys-bg);border-color:transparent}
+.rate.info{cursor:default}
+.rate.info:hover{border-color:var(--line)}
+.rate.info .val{font-size:20px;margin-top:6px}
+.formula{font-size:12px;color:var(--mute);margin-top:10px}
+.legend i.s{border-top-color:var(--sys)}
+#chart2{width:100%;height:260px;display:block}
+#chart2 text{fill:var(--mute);font-size:11px}
+tr.wk td{color:var(--mute);background:var(--wk-bg)}
+@media (max-width:900px){.rates,.rates.sys{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.rates,.rates.sys{grid-template-columns:1fr}.rate .val{font-size:26px}}
 </style>
 </head>
 <body>
@@ -77,7 +89,12 @@ tr.sel{background:var(--acc2);font-weight:600}
     <div class="status" id="status">Memuat data…</div>
   </header>
   <div class="warn" id="warn"></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="bi" class="on">Kurs BI &amp; KMK</button>
+    <button data-tab="sistem">Kurs Sistem</button>
+  </nav>
 
+  <div id="tab-bi">
   <section class="card" id="main">
     <div class="sel-head">
       <div class="tgl"><span id="selDate">–</span><span id="selBadge"></span></div>
@@ -126,6 +143,58 @@ tr.sel{background:var(--acc2);font-weight:600}
       </table>
     </div>
   </section>
+  </div>
+
+  <div id="tab-sys" hidden>
+  <section class="card" id="main2">
+    <div class="sel-head">
+      <div class="tgl"><span style="font-size:13px;font-weight:400;color:var(--mute)">Tanggal invoice</span><br><span id="sysDate">–</span><span id="sysBadge"></span></div>
+    </div>
+    <div class="note" id="sysNote" style="margin-top:8px"></div>
+    <div class="rates sys">
+      <div class="rate sell" data-k="selling" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Selling</div><div class="val" id="v-sell">–</div><div class="chg" id="c-sell"></div></div>
+      <div class="rate mid" data-k="tengah" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Tengah</div><div class="val" id="v-stg">–</div><div class="chg" id="c-stg"></div></div>
+      <div class="rate info"><div class="lbl">Sumber: Kurs BI</div><div class="val" id="v-src">–</div><div class="sub" id="s-src"></div></div>
+    </div>
+    <div class="formula">Rumus sistem untuk tanggal invoice D, memakai kurs BI terakhir yang terbit <b>sebelum</b> D (invoice Senin/setelah libur memakai kurs BI hari kerja terakhir):
+      <b>Kurs Selling</b> = Kurs Jual BI dibulatkan ke atas ke ratusan + Rp100 · <b>Kurs Tengah</b> = Kurs Tengah BI apa adanya.</div>
+    <div class="picker" id="picker2">
+      <label for="dt2" style="font-size:13px;color:var(--mute)">Tanggal invoice</label>
+      <input type="date" id="dt2">
+      <button data-q="today">Hari ini</button>
+      <button data-q="tmr">Besok</button>
+      <button data-q="yday">Kemarin</button>
+      <button data-q="w">−7 hari</button>
+      <button data-q="m">−1 bulan</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sec-title">
+      <div><h2>Grafik Kurs Sistem</h2><div class="legend"><span><i class="s"></i>Kurs Selling</span><span><i></i>Kurs Tengah</span></div></div>
+      <div class="seg" id="seg2">
+        <button data-r="1">1B</button><button data-r="3" class="on">3B</button><button data-r="6">6B</button><button data-r="12">1T</button><button data-r="0">Semua</button>
+      </div>
+    </div>
+    <svg id="chart2" role="img" aria-label="Grafik kurs sistem USD"></svg>
+  </section>
+
+  <section class="card">
+    <div class="sec-title">
+      <h2>Riwayat Kurs Sistem</h2>
+      <div class="range">
+        <input type="date" id="from2"> s.d. <input type="date" id="to2">
+        <button id="csv2">Unduh CSV</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tanggal Invoice</th><th>Kurs Selling</th><th>Kurs Tengah</th><th>Sumber Kurs BI</th><th>Kurs Jual BI Sumber</th></tr></thead>
+        <tbody id="tb2"></tbody>
+      </table>
+    </div>
+  </section>
+  </div>
 </div>
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
@@ -135,7 +204,7 @@ const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const BLN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const nf = new Intl.NumberFormat("id-ID", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const $ = id => document.getElementById(id);
-const S = {rows: [], kmk: [], sel: null, range: 12, meta: null, from: null, to: null};
+const S = {rows: [], kmk: [], sel: null, range: 12, meta: null, from: null, to: null, sel2: null, range2: 3, from2: null, to2: null, day: null};
 
 const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -169,6 +238,27 @@ function dayType(s) {
   return s > lastBI() ? "belum" : "libur";
 }
 
+// ===== Kurs Sistem =====
+// tanggal invoice d memakai kurs BI terakhir yang terbit SEBELUM d (invoice Senin -> kurs Jumat; setelah libur -> kurs BI terakhir)
+// Kurs Selling = Kurs Jual BI dibulatkan ke atas ke ratusan + 100; Kurs Tengah = Kurs Tengah BI apa adanya
+const ceil100 = v => Math.ceil(Math.round(v * 100) / 10000) * 100;
+function sysAt(d) {
+  const y = addDays(d, -1), i = rowAt(y);
+  if (i < 0) return null;
+  const r = S.rows[i];
+  return {src: r, bulat: ceil100(r.jual), selling: ceil100(r.jual) + 100, tengah: r.tengah,
+          sementara: y > lastBI() && dayType(y) === "belum"};
+}
+// angka bulat tanpa ",00"; pecahan tetap 2 desimal
+const fmtR = v => Math.abs(v - Math.round(v)) < 0.005 ? Math.round(v).toLocaleString("id-ID") : nf.format(v);
+const copyR = v => Math.abs(v - Math.round(v)) < 0.005 ? String(Math.round(v)) : v.toFixed(2).replace(".", ",");
+// jenis tanggal invoice untuk badge: akhir pekan / hari libur / biasa
+function invType(s) {
+  const wd = parse(s).getDay();
+  if (wd === 0 || wd === 6) return "wknd";
+  return s <= lastBI() && dayType(s) === "libur" ? "libur" : "normal";
+}
+
 function load() {
   const old = document.getElementById("dataScript");
   if (old) old.remove();
@@ -199,7 +289,15 @@ function apply(d) {
   for (const id of ["dt", "from", "to"]) { $(id).min = firstT; $(id).max = today; }
   if (first || S.to === prevLast || S.to === today) { S.to = today; if (first) S.from = addDays(today, -30) < firstT ? firstT : addDays(today, -30); }
   $("from").value = S.from; $("to").value = S.to;
+  // tab Kurs Sistem: tanggal invoice boleh s.d. besok (kurs besok = kurs BI hari ini)
+  const minI = addDays(firstT, 1), maxI = addDays(today, 1);
+  for (const id of ["dt2", "from2", "to2"]) { $(id).min = minI; $(id).max = maxI; }
+  if (first || !S.sel2 || S.sel2 === S.day) S.sel2 = today;
+  if (first || S.to2 === S.day) { S.to2 = today; if (first) S.from2 = addDays(today, -30) < minI ? minI : addDays(today, -30); }
+  S.day = today;
+  $("from2").value = S.from2; $("to2").value = S.to2;
   renderStatus(); renderSel(); renderChart(); renderTable();
+  renderSys(); renderTable2();
 }
 
 function renderStatus() {
@@ -356,7 +454,7 @@ function renderTable() {
 
 $("tb").onclick = ev => { const tr = ev.target.closest("tr[data-t]"); if (tr) { pick(tr.dataset.t); window.scrollTo({top: 0, behavior: "smooth"}); } };
 $("dt").onchange = ev => ev.target.value && pick(ev.target.value);
-document.querySelectorAll(".picker button").forEach(b => b.onclick = () => {
+document.querySelectorAll("#main .picker button").forEach(b => b.onclick = () => {
   const today = iso(new Date()), q = b.dataset.q, t = new Date();
   if (q === "today") pick(today);
   else if (q === "yday") pick(addDays(today, -1));
@@ -374,7 +472,7 @@ for (const id of ["from", "to"]) $(id).onchange = () => {
   if (S.from > S.to) [S.from, S.to] = [S.to, S.from];
   $("from").value = S.from; $("to").value = S.to; renderTable();
 };
-document.querySelectorAll(".rate").forEach(el => el.onclick = async () => {
+document.querySelectorAll("#main .rate").forEach(el => el.onclick = async () => {
   const k = el.dataset.k; let v, label;
   if (k === "kmk") { const ki = kmkAt(S.sel); if (ki < 0) return; v = S.kmk[ki].usd; label = `Kurs Pajak KMK ${S.kmk[ki].nomor}`; }
   else { const i = rowAt(S.sel); if (i < 0) return; v = S.rows[i][k]; label = `${el.querySelector(".lbl").textContent} ${shortDate(S.rows[i].tgl)}`; }
@@ -393,7 +491,155 @@ $("csv").onclick = () => {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `Kurs USD BI & KMK ${S.from} sd ${S.to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
-let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.rows.length && renderChart(), 150); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.rows.length) { renderChart(); renderSysChart(); } }, 150); });
+
+// ===== Tab Kurs Sistem: tampilan =====
+const SBADGE = {wknd: ['b-wknd', 'Akhir pekan'], libur: ['b-libur', 'Hari libur']};
+
+function renderSys() {
+  const s = S.sel2, o = sysAt(s), t = invType(s), y = addDays(s, -1);
+  $("dt2").value = s;
+  $("sysDate").textContent = longDate(s);
+  $("sysBadge").innerHTML = SBADGE[t] ? `<span class="badge ${SBADGE[t][0]}">${SBADGE[t][1]}</span>` : "";
+  const note = $("sysNote");
+  if (!o) {
+    note.style.display = "block"; note.textContent = "Belum ada data kurs BI sebelum tanggal ini.";
+    for (const id of ["v-sell", "v-stg", "v-src"]) $(id).textContent = "–";
+    for (const id of ["c-sell", "c-stg", "s-src"]) $(id).innerHTML = "";
+  } else {
+    if (o.sementara) {
+      note.style.display = "block";
+      note.textContent = `Kurs BI tanggal ${longDate(y)} belum terbit. Angka ini SEMENTARA (memakai kurs BI ${longDate(o.src.tgl)}) dan akan berubah setelah BI menerbitkan kurs ${shortDate(y)}.`;
+    } else if (o.src.tgl !== y) {
+      note.style.display = "block";
+      note.textContent = `${longDate(y)} tidak ada kurs BI (${invType(y) === "wknd" ? "akhir pekan" : "hari libur"}), jadi dipakai kurs BI terakhir sebelumnya: ${longDate(o.src.tgl)}.`;
+    } else note.style.display = "none";
+    const p = sysAt(addDays(s, -1));
+    $("v-sell").textContent = fmtR(o.selling);
+    $("c-sell").innerHTML = chg(o.selling, p ? p.selling : null) + (p ? ` <span class="flat">vs ${shortDate(y)}</span>` : "");
+    $("v-stg").textContent = fmtR(o.tengah);
+    $("c-stg").innerHTML = chg(o.tengah, p ? p.tengah : null) + (p ? ` <span class="flat">vs ${shortDate(y)}</span>` : "");
+    $("v-src").textContent = `${HARI[parse(o.src.tgl).getDay()]}, ${midDate(o.src.tgl)}`;
+    $("s-src").innerHTML = `Jual ${nf.format(o.src.jual)} → dibulatkan ${fmtR(o.bulat)} + 100 = <b>${fmtR(o.selling)}</b><br>Tengah ${nf.format(o.src.tengah)}`;
+  }
+  document.querySelectorAll("#tb2 tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.t === s));
+  renderSysChart();
+}
+
+function pick2(s) {
+  const maxI = addDays(iso(new Date()), 1), minI = addDays(S.rows[0].tgl, 1);
+  if (s > maxI) s = maxI;
+  if (s < minI) { toast("Data tersedia mulai " + shortDate(minI)); s = minI; }
+  S.sel2 = s; renderSys();
+}
+
+function renderSysChart() {
+  const svg = $("chart2"); if (!S.rows.length || $("tab-sys").hidden) return;
+  const W = svg.clientWidth || 900, H = 260, pl = 62, pr = 12, pt = 12, pb = 26;
+  const end = addDays(iso(new Date()), 1), minI = addDays(S.rows[0].tgl, 1);
+  let start = S.range2 ? addMonths(end, -S.range2) : minI; if (start < minI) start = minI;
+  const R = [];
+  for (let s = start; s <= end; s = addDays(s, 1)) { const o = sysAt(s); if (o) R.push({t: s, o}); }
+  if (R.length < 2) { svg.innerHTML = ""; return; }
+  const vs = R.flatMap(r => [r.o.selling, r.o.tengah]); let mn = Math.min(...vs), mx = Math.max(...vs);
+  const pad = (mx - mn) * 0.08 || 50; mn -= pad; mx += pad;
+  const t0 = parse(R[0].t).getTime(), t1 = parse(R[R.length - 1].t).getTime();
+  const X = t => pl + (parse(t).getTime() - t0) / (t1 - t0 || 1) * (W - pl - pr);
+  const Y = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
+  let g = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = mn + (mx - mn) * k / 4, y = Y(v);
+    g += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end">${Math.round(v).toLocaleString("id-ID")}</text>`;
+  }
+  const months = [];
+  for (const r of R) { const m = r.t.slice(0, 7); if (!months.length || months[months.length - 1].m !== m) months.push({m, t: r.t}); }
+  const step = Math.ceil(months.length / 8);
+  months.forEach((o, k) => { if (k % step === 0) { const d = parse(o.t); g += `<text x="${X(o.t)}" y="${H - 6}" text-anchor="middle">${BLN[d.getMonth()].slice(0, 3)} ${String(d.getFullYear()).slice(2)}</text>`; } });
+  // garis bertangga: nilai berlaku sepanjang hari
+  const stepPath = key => R.map((r, k) => (k ? `H${X(r.t).toFixed(1)} V` : `M${X(r.t).toFixed(1)} `) + Y(r.o[key]).toFixed(1)).join(" ");
+  const sel = R.find(r => r.t === S.sel2);
+  const mark = sel ? `<line x1="${X(sel.t)}" x2="${X(sel.t)}" y1="${pt}" y2="${H - pb}" stroke="var(--acc)" stroke-dasharray="3 3"/><circle cx="${X(sel.t)}" cy="${Y(sel.o.selling)}" r="4.5" fill="var(--sys)"/><circle cx="${X(sel.t)}" cy="${Y(sel.o.tengah)}" r="4.5" fill="var(--acc)"/>` : "";
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = g + `<path d="${stepPath("tengah")}" fill="none" stroke="var(--acc)" stroke-width="2"/><path d="${stepPath("selling")}" fill="none" stroke="var(--sys)" stroke-width="2"/>` + mark +
+    `<line id="hl2" x1="0" x2="0" y1="${pt}" y2="${H - pb}" stroke="var(--mute)" opacity="0"/><rect id="hit2" x="${pl}" y="${pt}" width="${W - pl - pr}" height="${H - pt - pb}" fill="transparent" style="cursor:crosshair"/>`;
+  const hit = svg.querySelector("#hit2"), hl = svg.querySelector("#hl2"), tip = $("tip");
+  const near = ev => {
+    const b = svg.getBoundingClientRect(), x = (ev.clientX - b.left) * (W / b.width);
+    let best = R[0], bd = 1e9;
+    for (const r of R) { const dd = Math.abs(X(r.t) - x); if (dd < bd) { bd = dd; best = r; } }
+    return best;
+  };
+  hit.onmousemove = ev => {
+    const r = near(ev); hl.setAttribute("x1", X(r.t)); hl.setAttribute("x2", X(r.t)); hl.setAttribute("opacity", ".5");
+    tip.style.display = "block"; tip.textContent = `Invoice ${shortDate(r.t)} · Selling ${fmtR(r.o.selling)} · Tengah ${fmtR(r.o.tengah)} (kurs BI ${shortDate(r.o.src.tgl)})`;
+    tip.style.left = Math.min(ev.clientX + 12, window.innerWidth - 380) + "px"; tip.style.top = (ev.clientY - 32) + "px";
+  };
+  hit.onmouseleave = () => { tip.style.display = "none"; hl.setAttribute("opacity", "0"); };
+  hit.onclick = ev => pick2(near(ev).t);
+}
+
+// semua tanggal kalender (invoice bisa bertanggal akhir pekan / libur)
+function rangeRows2() {
+  const out = [];
+  for (let s = S.to2; s >= S.from2; s = addDays(s, -1)) { const o = sysAt(s); if (o) out.push({tgl: s, o, type: invType(s)}); }
+  return out;
+}
+
+function renderTable2() {
+  const rows = rangeRows2();
+  $("tb2").innerHTML = rows.length ? rows.map(r => {
+    const b = SBADGE[r.type] ? ` <span class="badge ${SBADGE[r.type][0]}" style="margin-left:4px">${r.type === "wknd" ? "Akhir pekan" : "Libur"}</span>` : "";
+    const sm = r.o.sementara ? ' <span class="badge b-pend" style="margin-left:4px">Sementara</span>' : "";
+    return `<tr data-t="${r.tgl}" class="${r.type === "wknd" ? "wk" : r.type === "libur" ? "hol" : ""}"><td>${shortDate(r.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(r.tgl).getDay()]}</span>${b}${sm}</td>` +
+      `<td><b>${fmtR(r.o.selling)}</b></td><td>${fmtR(r.o.tengah)}</td>` +
+      `<td>${shortDate(r.o.src.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(r.o.src.tgl).getDay()]}</span></td><td>${nf.format(r.o.src.jual)}</td></tr>`;
+  }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--mute)">Tidak ada data pada rentang ini</td></tr>';
+  document.querySelectorAll("#tb2 tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.t === S.sel2));
+}
+
+$("tb2").onclick = ev => { const tr = ev.target.closest("tr[data-t]"); if (tr) { pick2(tr.dataset.t); window.scrollTo({top: 0, behavior: "smooth"}); } };
+$("dt2").onchange = ev => ev.target.value && pick2(ev.target.value);
+document.querySelectorAll("#picker2 button").forEach(b => b.onclick = () => {
+  const today = iso(new Date()), q = b.dataset.q;
+  pick2(q === "today" ? today : q === "tmr" ? addDays(today, 1) : q === "yday" ? addDays(today, -1) : q === "w" ? addDays(today, -7) : addMonths(today, -1));
+});
+document.querySelectorAll("#seg2 button").forEach(b => b.onclick = () => {
+  S.range2 = Number(b.dataset.r); document.querySelectorAll("#seg2 button").forEach(x => x.classList.toggle("on", x === b)); renderSysChart();
+});
+for (const id of ["from2", "to2"]) $(id).onchange = () => {
+  if (!$("from2").value || !$("to2").value) return;
+  S.from2 = $("from2").value; S.to2 = $("to2").value;
+  if (S.from2 > S.to2) [S.from2, S.to2] = [S.to2, S.from2];
+  $("from2").value = S.from2; $("to2").value = S.to2; renderTable2();
+};
+document.querySelectorAll("#main2 .rate[data-k]").forEach(el => el.onclick = async () => {
+  const o = sysAt(S.sel2); if (!o) return;
+  const k = el.dataset.k, txt = copyR(k === "selling" ? o.selling : o.tengah);
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  toast(`Tersalin: ${txt} (${k === "selling" ? "Kurs Selling" : "Kurs Tengah"} invoice ${shortDate(S.sel2)})`);
+});
+$("csv2").onclick = () => {
+  const rows = rangeRows2().reverse(), n = v => v.toFixed(2).replace(".", ",");
+  const lines = ["Tanggal Invoice;Hari;Kurs Selling;Kurs Tengah;Tanggal Kurs BI Sumber;Kurs Jual BI Sumber;Kurs Tengah BI Sumber;Keterangan"].concat(rows.map(r =>
+    [shortDate(r.tgl), HARI[parse(r.tgl).getDay()], copyR(r.o.selling), copyR(r.o.tengah), shortDate(r.o.src.tgl), n(r.o.src.jual), n(r.o.src.tengah),
+     [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", r.o.sementara ? "Sementara - kurs BI sebelumnya belum terbit" : ""].filter(Boolean).join(", ")].join(";")));
+  const blob = new Blob(["﻿" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `Kurs Sistem USD ${S.from2} sd ${S.to2}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+// ===== Tab =====
+function showTab(name) {
+  const sys = name === "sistem";
+  $("tab-bi").hidden = sys; $("tab-sys").hidden = !sys;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === (sys ? "sistem" : "bi")));
+  history.replaceState(null, "", sys ? "#sistem" : location.pathname + location.search);
+  if (S.rows.length) { if (sys) renderSysChart(); else renderChart(); }
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+window.addEventListener("hashchange", () => showTab(location.hash === "#sistem" ? "sistem" : "bi"));
+showTab(location.hash === "#sistem" ? "sistem" : "bi");
 
 load();
 setInterval(load, 5 * 60 * 1000);
