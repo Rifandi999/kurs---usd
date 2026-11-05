@@ -90,7 +90,7 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
   <div class="warn" id="warn"></div>
   <nav class="tabs" id="tabs">
     <button data-tab="bi" class="on">Kurs BI &amp; KMK</button>
-    <button data-tab="sistem">Kurs Sistem</button>
+    <button data-tab="sistem">Kurs Invoice HAL</button>
   </nav>
 
   <div id="tab-bi">
@@ -167,17 +167,17 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
 
   <section class="card">
     <div class="sec-title">
-      <div><h2>Grafik Kurs Sistem</h2><div class="legend"><span><i class="s"></i>Kurs Selling</span><span><i></i>Kurs Tengah</span></div></div>
+      <div><h2>Grafik Kurs Invoice HAL</h2><div class="legend"><span><i class="s"></i>Kurs Selling</span><span><i></i>Kurs Tengah</span></div></div>
       <div class="seg" id="seg2">
         <button data-r="1">1B</button><button data-r="3" class="on">3B</button><button data-r="6">6B</button><button data-r="12">1T</button><button data-r="0">Semua</button>
       </div>
     </div>
-    <svg id="chart2" role="img" aria-label="Grafik kurs sistem USD"></svg>
+    <svg id="chart2" role="img" aria-label="Grafik kurs invoice HAL USD"></svg>
   </section>
 
   <section class="card">
     <div class="sec-title">
-      <h2>Riwayat Kurs Sistem</h2>
+      <h2>Riwayat Kurs Invoice HAL</h2>
       <div class="range">
         <input type="date" id="from2"> s.d. <input type="date" id="to2">
         <button id="csv2">Unduh CSV</button>
@@ -234,7 +234,7 @@ function dayType(s) {
   return s > lastBI() ? "belum" : "libur";
 }
 
-// ===== Kurs Sistem: nilai jadi dari data (data/kurs_usd.js -> sistem) =====
+// ===== Kurs Invoice HAL: nilai jadi dari data (data/kurs_usd.js -> sistem) =====
 function sysAt(d) {
   const o = S.sys[d];
   return o ? {selling: o.selling, tengah: o.tengah, sementara: !!o.sem} : null;
@@ -279,7 +279,7 @@ function apply(d) {
   for (const id of ["dt", "from", "to"]) { $(id).min = firstT; $(id).max = today; }
   if (first || S.to === prevLast || S.to === today) { S.to = today; if (first) S.from = addDays(today, -30) < firstT ? firstT : addDays(today, -30); }
   $("from").value = S.from; $("to").value = S.to;
-  // tab Kurs Sistem: tanggal invoice boleh s.d. besok (kurs besok = kurs BI hari ini)
+  // tab Kurs Invoice HAL: rentang tanggal mengikuti data
   S.sys = {}; for (const o of (Array.isArray(d.sistem) ? d.sistem : [])) S.sys[o.tgl] = o;
   const sk = Object.keys(S.sys).sort(); S.sysMin = sk[0] || today; S.sysMax = sk[sk.length - 1] || today;
   const minI = S.sysMin, maxI = S.sysMax;
@@ -485,7 +485,7 @@ $("csv").onclick = () => {
 };
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.rows.length) { renderChart(); renderSysChart(); } }, 150); });
 
-// ===== Tab Kurs Sistem: tampilan =====
+// ===== Tab Kurs Invoice HAL: tampilan =====
 const SBADGE = {wknd: ['b-wknd', 'Akhir pekan'], libur: ['b-libur', 'Hari libur']};
 
 function renderSys() {
@@ -495,7 +495,7 @@ function renderSys() {
   $("sysBadge").innerHTML = SBADGE[t] ? `<span class="badge ${SBADGE[t][0]}">${SBADGE[t][1]}</span>` : "";
   const note = $("sysNote");
   if (!o) {
-    note.style.display = "block"; note.textContent = "Belum ada data kurs sistem untuk tanggal ini.";
+    note.style.display = "block"; note.textContent = "Belum ada data kurs invoice HAL untuk tanggal ini.";
     for (const id of ["v-sell", "v-stg"]) $(id).textContent = "–";
     for (const id of ["c-sell", "c-stg"]) $(id).innerHTML = "";
   } else {
@@ -610,7 +610,7 @@ $("csv2").onclick = () => {
      [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", r.o.sementara ? "Sementara" : ""].filter(Boolean).join(", ")].join(";")));
   const blob = new Blob(["﻿" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = `Kurs Sistem USD ${S.from2} sd ${S.to2}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  a.download = `Kurs Invoice HAL USD ${S.from2} sd ${S.to2}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 
 // ===== Tab =====
