@@ -68,12 +68,11 @@ tr.sel{background:var(--acc2);font-weight:600}
 .empty{padding:40px;text-align:center;color:var(--mute)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .tabs button{font-size:14px;padding:7px 16px;font-weight:600}
-.rates.sys{grid-template-columns:1.1fr 1fr 1.3fr}
+.rates.sys{grid-template-columns:1fr 1fr}
 .rate.sell{background:var(--sys-bg);border-color:transparent}
 .rate.info{cursor:default}
 .rate.info:hover{border-color:var(--line)}
 .rate.info .val{font-size:20px;margin-top:6px}
-.formula{font-size:12px;color:var(--mute);margin-top:10px}
 .legend i.s{border-top-color:var(--sys)}
 #chart2{width:100%;height:260px;display:block}
 #chart2 text{fill:var(--mute);font-size:11px}
@@ -154,10 +153,7 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
     <div class="rates sys">
       <div class="rate sell" data-k="selling" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Selling</div><div class="val" id="v-sell">–</div><div class="chg" id="c-sell"></div></div>
       <div class="rate mid" data-k="tengah" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Tengah</div><div class="val" id="v-stg">–</div><div class="chg" id="c-stg"></div></div>
-      <div class="rate info"><div class="lbl">Sumber: Kurs BI</div><div class="val" id="v-src">–</div><div class="sub" id="s-src"></div></div>
     </div>
-    <div class="formula">Rumus sistem untuk tanggal invoice D, memakai kurs BI terakhir yang terbit <b>sebelum</b> D (invoice Senin/setelah libur memakai kurs BI hari kerja terakhir):
-      <b>Kurs Selling</b> = Kurs Jual BI dibulatkan ke atas ke ratusan + Rp100 · <b>Kurs Tengah</b> = Kurs Tengah BI apa adanya.</div>
     <div class="picker" id="picker2">
       <label for="dt2" style="font-size:13px;color:var(--mute)">Tanggal invoice</label>
       <input type="date" id="dt2">
@@ -189,7 +185,7 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>Tanggal Invoice</th><th>Kurs Selling</th><th>Kurs Tengah</th><th>Sumber Kurs BI</th><th>Kurs Jual BI Sumber</th></tr></thead>
+        <thead><tr><th>Tanggal Invoice</th><th>Kurs Selling</th><th>Kurs Tengah</th></tr></thead>
         <tbody id="tb2"></tbody>
       </table>
     </div>
@@ -204,7 +200,7 @@ const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const BLN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const nf = new Intl.NumberFormat("id-ID", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const $ = id => document.getElementById(id);
-const S = {rows: [], kmk: [], sel: null, range: 12, meta: null, from: null, to: null, sel2: null, range2: 3, from2: null, to2: null, day: null};
+const S = {rows: [], kmk: [], sys: {}, sysMin: null, sysMax: null, sel: null, range: 12, meta: null, from: null, to: null, sel2: null, range2: 3, from2: null, to2: null, day: null};
 
 const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -238,16 +234,10 @@ function dayType(s) {
   return s > lastBI() ? "belum" : "libur";
 }
 
-// ===== Kurs Sistem =====
-// tanggal invoice d memakai kurs BI terakhir yang terbit SEBELUM d (invoice Senin -> kurs Jumat; setelah libur -> kurs BI terakhir)
-// Kurs Selling = Kurs Jual BI dibulatkan ke atas ke ratusan + 100; Kurs Tengah = Kurs Tengah BI apa adanya
-const ceil100 = v => Math.ceil(Math.round(v * 100) / 10000) * 100;
+// ===== Kurs Sistem: nilai jadi dari data (data/kurs_usd.js -> sistem) =====
 function sysAt(d) {
-  const y = addDays(d, -1), i = rowAt(y);
-  if (i < 0) return null;
-  const r = S.rows[i];
-  return {src: r, bulat: ceil100(r.jual), selling: ceil100(r.jual) + 100, tengah: r.tengah,
-          sementara: y > lastBI() && dayType(y) === "belum"};
+  const o = S.sys[d];
+  return o ? {selling: o.selling, tengah: o.tengah, sementara: !!o.sem} : null;
 }
 // angka bulat tanpa ",00"; pecahan tetap 2 desimal
 const fmtR = v => Math.abs(v - Math.round(v)) < 0.005 ? Math.round(v).toLocaleString("id-ID") : nf.format(v);
@@ -290,7 +280,9 @@ function apply(d) {
   if (first || S.to === prevLast || S.to === today) { S.to = today; if (first) S.from = addDays(today, -30) < firstT ? firstT : addDays(today, -30); }
   $("from").value = S.from; $("to").value = S.to;
   // tab Kurs Sistem: tanggal invoice boleh s.d. besok (kurs besok = kurs BI hari ini)
-  const minI = addDays(firstT, 1), maxI = addDays(today, 1);
+  S.sys = {}; for (const o of (Array.isArray(d.sistem) ? d.sistem : [])) S.sys[o.tgl] = o;
+  const sk = Object.keys(S.sys).sort(); S.sysMin = sk[0] || today; S.sysMax = sk[sk.length - 1] || today;
+  const minI = S.sysMin, maxI = S.sysMax;
   for (const id of ["dt2", "from2", "to2"]) { $(id).min = minI; $(id).max = maxI; }
   if (first || !S.sel2 || S.sel2 === S.day) S.sel2 = today;
   if (first || S.to2 === S.day) { S.to2 = today; if (first) S.from2 = addDays(today, -30) < minI ? minI : addDays(today, -30); }
@@ -503,31 +495,24 @@ function renderSys() {
   $("sysBadge").innerHTML = SBADGE[t] ? `<span class="badge ${SBADGE[t][0]}">${SBADGE[t][1]}</span>` : "";
   const note = $("sysNote");
   if (!o) {
-    note.style.display = "block"; note.textContent = "Belum ada data kurs BI sebelum tanggal ini.";
-    for (const id of ["v-sell", "v-stg", "v-src"]) $(id).textContent = "–";
-    for (const id of ["c-sell", "c-stg", "s-src"]) $(id).innerHTML = "";
+    note.style.display = "block"; note.textContent = "Belum ada data kurs sistem untuk tanggal ini.";
+    for (const id of ["v-sell", "v-stg"]) $(id).textContent = "–";
+    for (const id of ["c-sell", "c-stg"]) $(id).innerHTML = "";
   } else {
-    if (o.sementara) {
-      note.style.display = "block";
-      note.textContent = `Kurs BI tanggal ${longDate(y)} belum terbit. Angka ini SEMENTARA (memakai kurs BI ${longDate(o.src.tgl)}) dan akan berubah setelah BI menerbitkan kurs ${shortDate(y)}.`;
-    } else if (o.src.tgl !== y) {
-      note.style.display = "block";
-      note.textContent = `${longDate(y)} tidak ada kurs BI (${invType(y) === "wknd" ? "akhir pekan" : "hari libur"}), jadi dipakai kurs BI terakhir sebelumnya: ${longDate(o.src.tgl)}.`;
-    } else note.style.display = "none";
+    if (o.sementara) { note.style.display = "block"; note.textContent = "Angka SEMENTARA — dapat berubah setelah kurs BI terbaru terbit."; }
+    else note.style.display = "none";
     const p = sysAt(addDays(s, -1));
     $("v-sell").textContent = fmtR(o.selling);
     $("c-sell").innerHTML = chg(o.selling, p ? p.selling : null) + (p ? ` <span class="flat">vs ${shortDate(y)}</span>` : "");
     $("v-stg").textContent = fmtR(o.tengah);
     $("c-stg").innerHTML = chg(o.tengah, p ? p.tengah : null) + (p ? ` <span class="flat">vs ${shortDate(y)}</span>` : "");
-    $("v-src").textContent = `${HARI[parse(o.src.tgl).getDay()]}, ${midDate(o.src.tgl)}`;
-    $("s-src").innerHTML = `Jual ${nf.format(o.src.jual)} → dibulatkan ${fmtR(o.bulat)} + 100 = <b>${fmtR(o.selling)}</b><br>Tengah ${nf.format(o.src.tengah)}`;
   }
   document.querySelectorAll("#tb2 tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.t === s));
   renderSysChart();
 }
 
 function pick2(s) {
-  const maxI = addDays(iso(new Date()), 1), minI = addDays(S.rows[0].tgl, 1);
+  const maxI = S.sysMax, minI = S.sysMin;
   if (s > maxI) s = maxI;
   if (s < minI) { toast("Data tersedia mulai " + shortDate(minI)); s = minI; }
   S.sel2 = s; renderSys();
@@ -536,7 +521,7 @@ function pick2(s) {
 function renderSysChart() {
   const svg = $("chart2"); if (!S.rows.length || $("tab-sys").hidden) return;
   const W = svg.clientWidth || 900, H = 260, pl = 62, pr = 12, pt = 12, pb = 26;
-  const end = addDays(iso(new Date()), 1), minI = addDays(S.rows[0].tgl, 1);
+  const end = S.sysMax, minI = S.sysMin;
   let start = S.range2 ? addMonths(end, -S.range2) : minI; if (start < minI) start = minI;
   const R = [];
   for (let s = start; s <= end; s = addDays(s, 1)) { const o = sysAt(s); if (o) R.push({t: s, o}); }
@@ -571,7 +556,7 @@ function renderSysChart() {
   };
   hit.onmousemove = ev => {
     const r = near(ev); hl.setAttribute("x1", X(r.t)); hl.setAttribute("x2", X(r.t)); hl.setAttribute("opacity", ".5");
-    tip.style.display = "block"; tip.textContent = `Invoice ${shortDate(r.t)} · Selling ${fmtR(r.o.selling)} · Tengah ${fmtR(r.o.tengah)} (kurs BI ${shortDate(r.o.src.tgl)})`;
+    tip.style.display = "block"; tip.textContent = `Invoice ${shortDate(r.t)} · Selling ${fmtR(r.o.selling)} · Tengah ${fmtR(r.o.tengah)}`;
     tip.style.left = Math.min(ev.clientX + 12, window.innerWidth - 380) + "px"; tip.style.top = (ev.clientY - 32) + "px";
   };
   hit.onmouseleave = () => { tip.style.display = "none"; hl.setAttribute("opacity", "0"); };
@@ -591,9 +576,8 @@ function renderTable2() {
     const b = SBADGE[r.type] ? ` <span class="badge ${SBADGE[r.type][0]}" style="margin-left:4px">${r.type === "wknd" ? "Akhir pekan" : "Libur"}</span>` : "";
     const sm = r.o.sementara ? ' <span class="badge b-pend" style="margin-left:4px">Sementara</span>' : "";
     return `<tr data-t="${r.tgl}" class="${r.type === "wknd" ? "wk" : r.type === "libur" ? "hol" : ""}"><td>${shortDate(r.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(r.tgl).getDay()]}</span>${b}${sm}</td>` +
-      `<td><b>${fmtR(r.o.selling)}</b></td><td>${fmtR(r.o.tengah)}</td>` +
-      `<td>${shortDate(r.o.src.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(r.o.src.tgl).getDay()]}</span></td><td>${nf.format(r.o.src.jual)}</td></tr>`;
-  }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--mute)">Tidak ada data pada rentang ini</td></tr>';
+      `<td><b>${fmtR(r.o.selling)}</b></td><td>${fmtR(r.o.tengah)}</td></tr>`;
+  }).join("") : '<tr><td colspan="3" style="text-align:center;color:var(--mute)">Tidak ada data pada rentang ini</td></tr>';
   document.querySelectorAll("#tb2 tr").forEach(tr => tr.classList.toggle("sel", tr.dataset.t === S.sel2));
 }
 
@@ -621,9 +605,9 @@ document.querySelectorAll("#main2 .rate[data-k]").forEach(el => el.onclick = asy
 });
 $("csv2").onclick = () => {
   const rows = rangeRows2().reverse(), n = v => v.toFixed(2).replace(".", ",");
-  const lines = ["Tanggal Invoice;Hari;Kurs Selling;Kurs Tengah;Tanggal Kurs BI Sumber;Kurs Jual BI Sumber;Kurs Tengah BI Sumber;Keterangan"].concat(rows.map(r =>
-    [shortDate(r.tgl), HARI[parse(r.tgl).getDay()], copyR(r.o.selling), copyR(r.o.tengah), shortDate(r.o.src.tgl), n(r.o.src.jual), n(r.o.src.tengah),
-     [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", r.o.sementara ? "Sementara - kurs BI sebelumnya belum terbit" : ""].filter(Boolean).join(", ")].join(";")));
+  const lines = ["Tanggal Invoice;Hari;Kurs Selling;Kurs Tengah;Keterangan"].concat(rows.map(r =>
+    [shortDate(r.tgl), HARI[parse(r.tgl).getDay()], copyR(r.o.selling), copyR(r.o.tengah),
+     [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", r.o.sementara ? "Sementara" : ""].filter(Boolean).join(", ")].join(";")));
   const blob = new Blob(["﻿" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `Kurs Sistem USD ${S.from2} sd ${S.to2}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
