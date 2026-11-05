@@ -77,6 +77,7 @@ tr.sel{background:var(--acc2);font-weight:600}
 #chart2{width:100%;height:260px;display:block}
 #chart2 text{fill:var(--mute);font-size:11px}
 tr.wk td{color:var(--mute);background:var(--wk-bg)}
+.info{font-size:14px;color:var(--acc);background:var(--acc2);padding:8px 12px;border-radius:8px;margin-top:10px;display:none}
 @media (max-width:900px){.rates,.rates.sys{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.rates,.rates.sys{grid-template-columns:1fr}.rate .val{font-size:26px}}
 </style>
@@ -149,6 +150,7 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
     <div class="sel-head">
       <div class="tgl"><span style="font-size:13px;font-weight:400;color:var(--mute)">Tanggal invoice</span><br><span id="sysDate">–</span><span id="sysBadge"></span></div>
     </div>
+    <div class="info" id="sysInfo"></div>
     <div class="note" id="sysNote" style="margin-top:8px"></div>
     <div class="rates sys">
       <div class="rate sell" data-k="selling" title="Klik untuk menyalin"><span class="cp">salin</span><div class="lbl">Kurs Selling</div><div class="val" id="v-sell">–</div><div class="chg" id="c-sell"></div></div>
@@ -159,6 +161,7 @@ tr.wk td{color:var(--mute);background:var(--wk-bg)}
       <input type="date" id="dt2">
       <button data-q="today">Hari ini</button>
       <button data-q="tmr">Besok</button>
+      <button data-q="next" id="btnNext" hidden>Hari kerja berikutnya</button>
       <button data-q="yday">Kemarin</button>
       <button data-q="w">−7 hari</button>
       <button data-q="m">−1 bulan</button>
@@ -200,7 +203,7 @@ const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const BLN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const nf = new Intl.NumberFormat("id-ID", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const $ = id => document.getElementById(id);
-const S = {rows: [], kmk: [], sys: {}, sysMin: null, sysMax: null, sel: null, range: 12, meta: null, from: null, to: null, sel2: null, range2: 3, from2: null, to2: null, day: null};
+const S = {rows: [], kmk: [], sys: {}, libur: {}, sysMin: null, sysMax: null, sel: null, range: 12, meta: null, from: null, to: null, sel2: null, range2: 3, from2: null, to2: null, day: null};
 
 const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -242,12 +245,15 @@ function sysAt(d) {
 // angka bulat tanpa ",00"; pecahan tetap 2 desimal
 const fmtR = v => Math.abs(v - Math.round(v)) < 0.005 ? Math.round(v).toLocaleString("id-ID") : nf.format(v);
 const copyR = v => Math.abs(v - Math.round(v)) < 0.005 ? String(Math.round(v)) : v.toFixed(2).replace(".", ",");
-// jenis tanggal invoice untuk badge: akhir pekan / hari libur / biasa
+// jenis tanggal: akhir pekan / hari libur (daftar SKB libur nasional & cuti bersama, atau hari kerja lampau tanpa kurs BI) / biasa
 function invType(s) {
   const wd = parse(s).getDay();
   if (wd === 0 || wd === 6) return "wknd";
+  if (S.libur[s]) return "libur";
   return s <= lastBI() && dayType(s) === "libur" ? "libur" : "normal";
 }
+const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const namaHari = s => invType(s) === "wknd" ? "akhir pekan" + (S.libur[s] ? " · " + S.libur[s] : "") : S.libur[s] || (invType(s) === "libur" ? "hari libur" : "");
 
 function load() {
   const old = document.getElementById("dataScript");
@@ -281,11 +287,13 @@ function apply(d) {
   $("from").value = S.from; $("to").value = S.to;
   // tab Kurs Invoice HAL: rentang tanggal mengikuti data
   S.sys = {}; for (const o of (Array.isArray(d.sistem) ? d.sistem : [])) S.sys[o.tgl] = o;
+  S.libur = {}; for (const l of (Array.isArray(d.libur) ? d.libur : [])) S.libur[l.tgl] = l.nama;
+  const prevMax = S.sysMax;
   const sk = Object.keys(S.sys).sort(); S.sysMin = sk[0] || today; S.sysMax = sk[sk.length - 1] || today;
   const minI = S.sysMin, maxI = S.sysMax;
   for (const id of ["dt2", "from2", "to2"]) { $(id).min = minI; $(id).max = maxI; }
   if (first || !S.sel2 || S.sel2 === S.day) S.sel2 = today;
-  if (first || S.to2 === S.day) { S.to2 = today; if (first) S.from2 = addDays(today, -30) < minI ? minI : addDays(today, -30); }
+  if (first || S.to2 === prevMax || S.to2 === S.day) { S.to2 = S.sysMax > today ? S.sysMax : today; if (first) S.from2 = addDays(today, -30) < minI ? minI : addDays(today, -30); }
   S.day = today;
   $("from2").value = S.from2; $("to2").value = S.to2;
   renderStatus(); renderSel(); renderChart(); renderTable();
@@ -338,7 +346,7 @@ function renderSel() {
     const r = S.rows[i], p = i > 0 ? S.rows[i - 1] : null;
     if (t !== "normal") {
       const why = t === "wknd" ? `${HARI[parse(s).getDay()]} — BI tidak menerbitkan kurs pada akhir pekan`
-        : t === "libur" ? "Hari libur nasional / cuti bersama — BI tidak menerbitkan kurs"
+        : t === "libur" ? (S.libur[s] ? S.libur[s] : "Hari libur nasional / cuti bersama") + " — BI tidak menerbitkan kurs"
         : "Kurs BI untuk tanggal ini belum terbit (biasanya terbit pagi hari kerja)";
       note.style.display = "block";
       note.textContent = `${why}. Kurs BI yang dipakai: kurs tanggal sebelumnya, ${longDate(r.tgl)}.`;
@@ -492,7 +500,17 @@ function renderSys() {
   const s = S.sel2, o = sysAt(s), t = invType(s), y = addDays(s, -1);
   $("dt2").value = s;
   $("sysDate").textContent = longDate(s);
-  $("sysBadge").innerHTML = SBADGE[t] ? `<span class="badge ${SBADGE[t][0]}">${SBADGE[t][1]}</span>` : "";
+  $("sysBadge").innerHTML = (SBADGE[t] ? `<span class="badge ${SBADGE[t][0]}">${SBADGE[t][1]}</span>` : "") +
+    (S.libur[s] ? ` <span class="flat" style="font-size:13px;font-weight:400">${esc(S.libur[s])}</span>` : "");
+  // besok akhir pekan / tanggal merah -> kurs invoice s.d. hari kerja berikutnya sudah tersedia
+  const tmr = addDays(iso(new Date()), 1), info = $("sysInfo");
+  if (S.sysMax > tmr) {
+    const lib = []; for (let x = tmr; x < S.sysMax; x = addDays(x, 1)) if (S.libur[x] && invType(x) !== "wknd") lib.push(`${shortDate(x)} ${S.libur[x]}`);
+    info.style.display = "block";
+    info.textContent = `Besok ${longDate(tmr)} ${invType(tmr) === "wknd" ? "akhir pekan" : "hari libur"}` + (lib.length ? ` (${lib.join("; ")})` : "") +
+      `. Kurs invoice sampai ${longDate(S.sysMax)} (hari kerja berikutnya) sudah bisa dicek.`;
+  } else info.style.display = "none";
+  $("btnNext").hidden = !(S.sysMax > tmr);
   const note = $("sysNote");
   if (!o) {
     note.style.display = "block"; note.textContent = "Belum ada data kurs invoice HAL untuk tanggal ini.";
@@ -573,7 +591,8 @@ function rangeRows2() {
 function renderTable2() {
   const rows = rangeRows2();
   $("tb2").innerHTML = rows.length ? rows.map(r => {
-    const b = SBADGE[r.type] ? ` <span class="badge ${SBADGE[r.type][0]}" style="margin-left:4px">${r.type === "wknd" ? "Akhir pekan" : "Libur"}</span>` : "";
+    const nm = S.libur[r.tgl] ? esc(S.libur[r.tgl]) : "";
+    const b = SBADGE[r.type] ? ` <span class="badge ${SBADGE[r.type][0]}" style="margin-left:4px"${nm ? ` title="${nm}"` : ""}>${r.type === "wknd" ? "Akhir pekan" : "Libur"}</span>` : "";
     const sm = r.o.sementara ? ' <span class="badge b-pend" style="margin-left:4px">Sementara</span>' : "";
     return `<tr data-t="${r.tgl}" class="${r.type === "wknd" ? "wk" : r.type === "libur" ? "hol" : ""}"><td>${shortDate(r.tgl)} <span class="flat" style="font-size:12px">${HARI[parse(r.tgl).getDay()]}</span>${b}${sm}</td>` +
       `<td><b>${fmtR(r.o.selling)}</b></td><td>${fmtR(r.o.tengah)}</td></tr>`;
@@ -585,7 +604,7 @@ $("tb2").onclick = ev => { const tr = ev.target.closest("tr[data-t]"); if (tr) {
 $("dt2").onchange = ev => ev.target.value && pick2(ev.target.value);
 document.querySelectorAll("#picker2 button").forEach(b => b.onclick = () => {
   const today = iso(new Date()), q = b.dataset.q;
-  pick2(q === "today" ? today : q === "tmr" ? addDays(today, 1) : q === "yday" ? addDays(today, -1) : q === "w" ? addDays(today, -7) : addMonths(today, -1));
+  pick2(q === "next" ? S.sysMax : q === "today" ? today : q === "tmr" ? addDays(today, 1) : q === "yday" ? addDays(today, -1) : q === "w" ? addDays(today, -7) : addMonths(today, -1));
 });
 document.querySelectorAll("#seg2 button").forEach(b => b.onclick = () => {
   S.range2 = Number(b.dataset.r); document.querySelectorAll("#seg2 button").forEach(x => x.classList.toggle("on", x === b)); renderSysChart();
@@ -607,7 +626,7 @@ $("csv2").onclick = () => {
   const rows = rangeRows2().reverse(), n = v => v.toFixed(2).replace(".", ",");
   const lines = ["Tanggal Invoice;Hari;Kurs Selling;Kurs Tengah;Keterangan"].concat(rows.map(r =>
     [shortDate(r.tgl), HARI[parse(r.tgl).getDay()], copyR(r.o.selling), copyR(r.o.tengah),
-     [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", r.o.sementara ? "Sementara" : ""].filter(Boolean).join(", ")].join(";")));
+     [r.type === "wknd" ? "Akhir pekan" : r.type === "libur" ? "Hari libur" : "", S.libur[r.tgl] || "", r.o.sementara ? "Sementara" : ""].filter(Boolean).join(", ")].join(";")));
   const blob = new Blob(["﻿" + lines.join("\r\n")], {type: "text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = `Kurs Invoice HAL USD ${S.from2} sd ${S.to2}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
